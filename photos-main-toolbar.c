@@ -453,7 +453,8 @@ photos_main_toolbar_trash_button_clicked (PhotosMainToolbar *self)
 {
   PhotosBaseItem *item;
   GList *items = NULL;
-  item = PHOTOS_BASE_ITEM (photos_base_manager_get_active_object (self->priv->item_mngr));
+  
+  item = PHOTOS_BASE_ITEM (photos_base_manager_get_active_object(self->priv->item_mngr));
   items = g_list_prepend (items, g_object_ref (item));
   photos_base_manager_remove_object (self->priv->item_mngr, G_OBJECT (item));
   photos_delete_notification_new (items);

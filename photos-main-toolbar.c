@@ -48,6 +48,7 @@
 
 struct _PhotosMainToolbarPrivate
 {
+ GtkTreeModel *model;
   GAction *search;
   GCancellable *loader_cancellable;
   GSimpleAction *gear_menu;
@@ -60,6 +61,7 @@ struct _PhotosMainToolbarPrivate
   GtkWidget *selection_menu;
   GtkWidget *toolbar;
   GtkWidget *trash_button;
+  GtkTreePath *current_path;
   PhotosBaseManager *item_mngr;
   PhotosModeController *mode_cntrlr;
   PhotosRemoteDisplayManager *remote_mngr;
@@ -449,6 +451,29 @@ photos_main_toolbar_done_button_clicked (PhotosMainToolbar *self)
 }
 
 static void
+photos_main_toolbar_set_active_path (PhotosMainToolbar *self)
+{
+  
+  GtkTreeIter child_iter;
+  GtkTreeIter iter;
+  GtkTreeModel *child_model;
+  PhotosBaseItem *item;
+  gchar *id;
+
+  if (!gtk_tree_model_get_iter (self->priv->model, &iter, self->priv->current_path))
+    return;
+
+  gtk_tree_model_filter_convert_iter_to_child_iter (GTK_TREE_MODEL_FILTER (self->priv->model), &child_iter, &iter);
+  child_model = gtk_tree_model_filter_get_model (GTK_TREE_MODEL_FILTER (self->priv->model));
+  gtk_tree_model_get (child_model, &child_iter, PHOTOS_VIEW_MODEL_URN, &id, -1);
+
+  item = PHOTOS_BASE_ITEM (photos_base_manager_get_object_by_id (self->priv->item_mngr, id));
+  photos_base_manager_set_active_object (self->priv->item_mngr, G_OBJECT (item));
+
+  g_free (id);
+}
+
+static void
 photos_main_toolbar_trash_button_clicked (PhotosMainToolbar *self)
 {
   PhotosBaseItem *item;
@@ -458,10 +483,18 @@ photos_main_toolbar_trash_button_clicked (PhotosMainToolbar *self)
   items = g_list_prepend (items, g_object_ref (item));
   photos_base_manager_remove_object (self->priv->item_mngr, G_OBJECT (item));
   photos_delete_notification_new (items);
+  gtk_tree_path_next (self->priv->current_path);
+  photos_main_toolbar_set_active_path (self);
+
+//  g_signal_emit (self, signals[ACTIVATED], 0, self->priv->action);
+
   
 
   g_list_free_full (items, g_object_unref);
 }
+
+
+
 
 
 static void
